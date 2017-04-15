@@ -1,12 +1,14 @@
 package com.example.vivek.assistant;
 
 import android.content.ActivityNotFoundException;
+import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Build;
 import android.provider.AlarmClock;
 import android.speech.RecognizerIntent;
 import android.speech.tts.TextToSpeech;
+import android.support.annotation.IntegerRes;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import java.text.DateFormat;
@@ -83,6 +85,7 @@ public class MainActivity extends AppCompatActivity {
         loadQuestions();
 
     }
+    //LISTEN TO USER
     private void listen(){
         Intent i = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
         i.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
@@ -274,11 +277,13 @@ public class MainActivity extends AppCompatActivity {
             String[] time = speech[speech.length-1].split(":");
             String hour = time[0];
             String minutes = time[1];
+           int h=Integer.valueOf(hour);
+            int m= Integer.valueOf(minutes);
             Intent i = new Intent(AlarmClock.ACTION_SET_ALARM);
-            i.putExtra(AlarmClock.EXTRA_HOUR, Integer.valueOf(hour));
-            i.putExtra(AlarmClock.EXTRA_MINUTES, Integer.valueOf(minutes));
+            i.putExtra(AlarmClock.EXTRA_HOUR, h);
+            i.putExtra(AlarmClock.EXTRA_MINUTES,m);
             startActivity(i);
-            createBotMsg("Setting alarm to ring at " + hour + ":" + minutes);
+            createBotMsg("Setting alarm to ring at " + h + ":" + m);
             speak("Setting alarm to ring at " + hour + ":" + minutes);
         }
 
@@ -287,7 +292,7 @@ public class MainActivity extends AppCompatActivity {
             speak("Happy to  " + preferences.getString(NAME, null));
         }
 
-        if(text.contains("how old am i") || text.contains("what is my age") ){
+        if(text.contains("how old am i") || text.contains("what is my age") || text.contains("how old am I") ){
             String a=preferences.getString(AGE,"");
             if(a.equals(""))
             {
