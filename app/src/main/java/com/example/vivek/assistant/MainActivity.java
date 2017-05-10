@@ -5,6 +5,7 @@ import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.net.Uri;
@@ -28,6 +29,7 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 import java.util.Locale;
 
 import android.text.TextUtils;
@@ -387,6 +389,23 @@ public class MainActivity extends AppCompatActivity {
             speak("Calling ");
             find(name);
         }
+        if(text.contains("open ")){
+
+            createBotMsg("opening "+speech[speech.length-1]);
+            speak("opening "+speech[speech.length-1]);
+            final PackageManager pm = getPackageManager();
+            //get a list of installed apps.
+            List<ApplicationInfo> packages = pm.getInstalledApplications(PackageManager.GET_META_DATA);
+
+            for (ApplicationInfo packageInfo : packages) {
+
+
+                if(packageInfo.packageName.contains(speech[speech.length-1])){
+                    startNewActivity(this,packageInfo.packageName);
+                    break;
+                }
+            }
+        }
     }
     private void createBotMsg(String text){
         chat_Message msg = new chat_Message();
@@ -482,6 +501,20 @@ public class MainActivity extends AppCompatActivity {
         }
 
 
+    }
+    public void startNewActivity(Context context, String packageName) {
+        Intent intent = context.getPackageManager().getLaunchIntentForPackage(packageName);
+        if (intent != null) {
+            // We found the activity now start the activity
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            context.startActivity(intent);
+        } else {
+            // Bring user to the market or let them choose an app?
+            intent = new Intent(Intent.ACTION_VIEW);
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            intent.setData(Uri.parse("market://details?id=" + packageName));
+            context.startActivity(intent);
+        }
     }
 
 }
