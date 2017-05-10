@@ -1,15 +1,20 @@
 package com.example.vivek.assistant;
 
+import android.Manifest;
 import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
+import android.database.Cursor;
 import android.net.Uri;
 import android.os.Build;
 import android.provider.AlarmClock;
+import android.provider.ContactsContract;
 import android.speech.RecognizerIntent;
 import android.speech.tts.TextToSpeech;
 import android.support.annotation.IntegerRes;
+import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 
@@ -376,7 +381,12 @@ public class MainActivity extends AppCompatActivity {
                     Uri.parse("google.navigation:q="+dest));
             startActivity(intent);
         }
-
+        if(text.contains("call")){
+            String name=speech[speech.length-1];
+            createBotMsg("Calling "+name);
+            speak("Calling ");
+            find(name);
+        }
     }
     private void createBotMsg(String text){
         chat_Message msg = new chat_Message();
@@ -423,6 +433,56 @@ public class MainActivity extends AppCompatActivity {
         }
     }
     */
+
+
+    public void find(String pName) {
+
+        String cond = ContactsContract.Contacts.DISPLAY_NAME;
+        Cursor cur = getContentResolver().query(ContactsContract.Contacts.CONTENT_URI,
+                null,
+                cond + " LIKE ?",
+                new String[]{pName}, null);
+        //Toast.makeText(getApplicationContext(), cond, Toast.LENGTH_LONG).show();
+        if (cur.getCount() > 0) {
+            cur.moveToNext();
+            String name = cur
+                    .getString(cur
+                            .getColumnIndex(ContactsContract.Contacts._ID));
+
+            //t2.append(name);
+            Cursor pCur = getContentResolver().query(ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
+                    null,
+                    ContactsContract.CommonDataKinds.Phone.CONTACT_ID + " =?",
+                    new String[]{name}, null);
+
+            pCur.moveToNext();
+            String number = pCur
+                    .getString(pCur
+                            .getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER));
+            //t2.append("," + number);
+            pCur.close();
+            cur.close();
+            Intent callIntent = new Intent(Intent.ACTION_CALL);
+            callIntent.setData(Uri.parse("tel:0" + number));
+            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.CALL_PHONE) != PackageManager.PERMISSION_GRANTED) {
+                // TODO: Consider calling
+                //    ActivityCompat#requestPermissions
+                // here to request the missing permissions, and then overriding
+                //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+                //                                          int[] grantResults)
+                // to handle the case where the user grants the permission. See the documentation
+                // for ActivityCompat#requestPermissions for more details.
+                return;
+            }
+
+            startActivity(callIntent);
+        }
+        else{
+            Toast.makeText(getApplicationContext(),"NO CONTACTS",Toast.LENGTH_LONG).show();
+        }
+
+
+    }
 
 }
 
