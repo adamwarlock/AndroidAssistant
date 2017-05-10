@@ -4,6 +4,7 @@ import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.net.Uri;
 import android.os.Build;
 import android.provider.AlarmClock;
 import android.speech.RecognizerIntent;
@@ -357,6 +358,23 @@ public class MainActivity extends AppCompatActivity {
                 createBotMsg("I am fine. Thank You for asking " + s);
                 speak("I am fine. Thank You for asking " + s);
             }
+        }
+        if(text.contains("distance from") && text.contains("to")){
+           createBotMsg("Loading maps application");
+            speak("Loading maps application.");
+            String dest=speech[speech.length-1];
+            String src = speech[speech.length-3];
+            Intent intent = new Intent(android.content.Intent.ACTION_VIEW,
+                    Uri.parse("http://maps.google.com/maps?saddr="+src+"&daddr="+dest));
+            startActivity(intent);
+        }
+        if(text.contains("route to")||text.contains("navigate to")){
+            String dest=speech[speech.length-1];
+            createBotMsg("Loading navigation");
+            speak("Loading navigation.");
+            Intent intent = new Intent(android.content.Intent.ACTION_VIEW,
+                    Uri.parse("google.navigation:q="+dest));
+            startActivity(intent);
         }
 
     }
