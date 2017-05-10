@@ -11,6 +11,13 @@ import android.speech.tts.TextToSpeech;
 import android.support.annotation.IntegerRes;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+
+import java.io.BufferedWriter;
+import java.io.DataOutputStream;
+import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
+import java.net.InetAddress;
+import java.net.Socket;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -48,12 +55,19 @@ public class MainActivity extends AppCompatActivity {
     private static final String NAME = "name";
     private static final String AGE = "age";
     private static final String AS_NAME = "as_name";
+
+    //socket variables
+    String serverAdd ="13.126.0.170";
+    int port = 1234;
+    Socket s;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         initAssistant();
         initChat();
+                               //con();                     #UNCOMMENT FOR SOCKET CONNECTION WITH SERVER
+
     }
 
     private void initAssistant(){
@@ -105,6 +119,9 @@ public class MainActivity extends AppCompatActivity {
         questions.add("What is your surname?");
         questions.add("How old are you?");
         questions.add("That's all I had, thank you ");
+        //client c=new client();
+        //c.connect();
+
     }
     @Override
     public void onDestroy() {
@@ -235,6 +252,7 @@ public class MainActivity extends AppCompatActivity {
 
     }
     private void recognition(String text,boolean print){
+        text=text.toLowerCase();
         if(print == true)
               createUserMsg(text);
 
@@ -340,6 +358,7 @@ public class MainActivity extends AppCompatActivity {
                 speak("I am fine. Thank You for asking " + s);
             }
         }
+
     }
     private void createBotMsg(String text){
         chat_Message msg = new chat_Message();
@@ -357,4 +376,35 @@ public class MainActivity extends AppCompatActivity {
         msg.setDate(DateFormat.getDateTimeInstance().format(new Date()));
         displayMessage(msg);
     }
+
+    /*
+    void con(){
+        new Thread(new clientThread()).start();
+        try{
+            DataOutputStream dout=new DataOutputStream(s.getOutputStream());
+            dout.writeUTF("Hello, Server");
+            dout.flush();
+            dout.close();
+        }
+        catch (Exception e){
+            e.printStackTrace();
+        }
+    }
+    private class clientThread implements Runnable {
+        public void run() {
+            try {
+                InetAddress serverAddr = InetAddress.getByName(serverAdd);
+                s = new Socket(serverAddr, port);
+
+
+
+                // s.close();
+            } catch (Exception e1) {
+                e1.printStackTrace();
+            }
+        }
+    }
+    */
+
 }
+
