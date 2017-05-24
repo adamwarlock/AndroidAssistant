@@ -8,6 +8,8 @@ import android.content.SharedPreferences;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
+import android.location.Address;
+import android.location.Geocoder;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.Uri;
@@ -24,6 +26,7 @@ import android.os.Bundle;
 
 import java.io.BufferedWriter;
 import java.io.DataOutputStream;
+import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.net.InetAddress;
@@ -163,6 +166,18 @@ public class MainActivity extends AppCompatActivity {
             Toast.makeText(MainActivity.this, "Your device doesn't support Speech Recognition", Toast.LENGTH_SHORT).show();
         }
     }
+    private void listen4(){
+        Intent i = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
+        i.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
+        i.putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault());
+        i.putExtra(RecognizerIntent.EXTRA_PROMPT, "Your Destination");
+
+        try {
+            startActivityForResult(i, 400);
+        } catch (ActivityNotFoundException a) {
+            Toast.makeText(MainActivity.this, "Your device doesn't support Speech Recognition", Toast.LENGTH_SHORT).show();
+        }
+    }
     private void loadQuestions(){
         questions = new ArrayList<>();
         questions.clear();
@@ -221,6 +236,15 @@ public class MainActivity extends AppCompatActivity {
                 //Toast.makeText(getApplicationContext(),inSpeech,Toast.LENGTH_LONG).show();
                 txtMessage=inSpeech;
                 whatsappMessage(txtMessage);
+            }
+        }
+        if(requestCode == 400) {
+            if (resultCode == RESULT_OK && null != data) {
+                ArrayList<String> res = data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS);
+                String inSpeech = res.get(0);
+                //Toast.makeText(getApplicationContext(),inSpeech,Toast.LENGTH_LONG).show();
+                txtMessage=inSpeech;
+                ubr(txtMessage);
             }
         }
     }
@@ -612,6 +636,18 @@ public class MainActivity extends AppCompatActivity {
 
 
         }
+        if(text.contains("book me a ride")||text.contains("book me an uber")){
+            createBotMsg("what is your destination?");
+            speak("what is your destination?");
+            final Handler handler = new Handler();
+            handler.postDelayed(new Runnable() {
+                @Override
+                public void run() {
+
+                    listen4();
+                }
+            }, 1500);
+        }
     }
     private void createBotMsg(String text){
         chat_Message msg = new chat_Message();
@@ -827,6 +863,32 @@ public class MainActivity extends AppCompatActivity {
         ntent.putExtra(Intent.EXTRA_TEXT, message);
         ntent.putExtra("chat",true);
         startActivity(ntent);
+    }
+    private void ubr(String add){
+        Geocoder coder = new Geocoder(getApplicationContext(), Locale.getDefault());
+        List<Address> address;
+        // GeoPoint p1 = null;
+
+        try {
+            address = coder.getFromLocationName(add,1);
+            if (address==null) {
+               createBotMsg("Address not found");
+                speak("Address not found");
+            }else {
+                Address location = address.get(0);
+
+                double lat = location.getLatitude();
+                double lng = location.getLongitude();
+
+                String uri =
+                        "uber://?action=setPickup&pickup=my_location&dropoff[latitude]="+String.valueOf(lat)+"&dropoff[longitude]="+String.valueOf(lng);
+                Intent intent = new Intent(android.content.Intent.ACTION_VIEW,
+                        Uri.parse(uri));
+                startActivity(intent);
+            }
+        } catch (IOException e) {
+
+        }
     }
 }
 
