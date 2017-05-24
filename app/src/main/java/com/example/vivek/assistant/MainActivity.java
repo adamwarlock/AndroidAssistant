@@ -12,6 +12,7 @@ import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.Uri;
 import android.os.Build;
+import android.os.Handler;
 import android.provider.AlarmClock;
 import android.provider.ContactsContract;
 import android.speech.RecognizerIntent;
@@ -79,6 +80,9 @@ public class MainActivity extends AppCompatActivity {
     private static final String AGE = "age";
     private static final String AS_NAME = "as_name";
     JSONObject ans;
+    //MESSAGING APP VARIABLES
+    String numberID;
+    String txtMessage;
     //socket variables
     String serverAdd ="13.126.0.170";
     int port = 1234;
@@ -135,6 +139,30 @@ public class MainActivity extends AppCompatActivity {
             Toast.makeText(MainActivity.this, "Your device doesn't support Speech Recognition", Toast.LENGTH_SHORT).show();
         }
     }
+    private void listen2(){
+        Intent i = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
+        i.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
+        i.putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault());
+        i.putExtra(RecognizerIntent.EXTRA_PROMPT, "Your Message");
+
+        try {
+            startActivityForResult(i, 200);
+        } catch (ActivityNotFoundException a) {
+            Toast.makeText(MainActivity.this, "Your device doesn't support Speech Recognition", Toast.LENGTH_SHORT).show();
+        }
+    }
+    private void listen3(){
+        Intent i = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
+        i.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
+        i.putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault());
+        i.putExtra(RecognizerIntent.EXTRA_PROMPT, "Your Message");
+
+        try {
+            startActivityForResult(i, 300);
+        } catch (ActivityNotFoundException a) {
+            Toast.makeText(MainActivity.this, "Your device doesn't support Speech Recognition", Toast.LENGTH_SHORT).show();
+        }
+    }
     private void loadQuestions(){
         questions = new ArrayList<>();
         questions.clear();
@@ -177,7 +205,28 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         }
+        if(requestCode == 200) {
+            if (resultCode == RESULT_OK && null != data) {
+                ArrayList<String> res = data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS);
+                String inSpeech = res.get(0);
+                //Toast.makeText(getApplicationContext(),inSpeech,Toast.LENGTH_LONG).show();
+                txtMessage=inSpeech;
+                smsMEssage(numberID,txtMessage);
+            }
+        }
+        if(requestCode == 300) {
+            if (resultCode == RESULT_OK && null != data) {
+                ArrayList<String> res = data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS);
+                String inSpeech = res.get(0);
+                //Toast.makeText(getApplicationContext(),inSpeech,Toast.LENGTH_LONG).show();
+                txtMessage=inSpeech;
+                whatsappMessage(txtMessage);
+            }
+        }
     }
+
+
+
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
 
@@ -431,6 +480,138 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         }
+        if(text.contains("send sms to")||text.contains("send text to")){
+
+            String pName=speech[speech.length-1];
+            String cond = ContactsContract.Contacts.DISPLAY_NAME;
+            Cursor cur = getContentResolver().query(ContactsContract.Contacts.CONTENT_URI,
+                    null,
+                    cond + " LIKE ?",
+                    new String[]{pName}, null);
+
+            if (cur.getCount() > 0) {
+                cur.moveToNext();
+                String name = cur
+                        .getString(cur
+                                .getColumnIndex(ContactsContract.Contacts._ID));
+
+
+                Cursor pCur = getContentResolver().query(ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
+                        null,
+                        ContactsContract.CommonDataKinds.Phone.CONTACT_ID + " =?",
+                        new String[]{name}, null);
+
+                pCur.moveToNext();
+                String number = pCur
+                        .getString(pCur
+                                .getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER));
+
+                pCur.close();
+                cur.close();
+
+                if(number.contains("+91"))
+                {
+                    number=number.substring(1);
+                }
+                createBotMsg("What is the sms you want to send?");
+                speak("What is the sms you want to send?");
+                Handler handler = new Handler();
+                handler.postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        listen2();
+                    }
+                }, 1500);
+
+                numberID=number;
+
+
+            }
+            else{
+                createBotMsg("No Contact found by that name.");
+                speak("No Contact found by that name.");
+            }
+        }
+        if(text.contains("send whatsapp message to")||text.contains("send whatsapp text to")||text.contains("whatsapp to ")){
+
+            String pName=speech[speech.length-1];
+            String cond = ContactsContract.Contacts.DISPLAY_NAME;
+            Cursor cur = getContentResolver().query(ContactsContract.Contacts.CONTENT_URI,
+                    null,
+                    cond + " LIKE ?",
+                    new String[]{pName}, null);
+
+            if (cur.getCount() > 0) {
+                cur.moveToNext();
+                String name = cur
+                        .getString(cur
+                                .getColumnIndex(ContactsContract.Contacts._ID));
+
+
+                Cursor pCur = getContentResolver().query(ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
+                        null,
+                        ContactsContract.CommonDataKinds.Phone.CONTACT_ID + " =?",
+                        new String[]{name}, null);
+
+                pCur.moveToNext();
+                String number = pCur
+                        .getString(pCur
+                                .getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER));
+
+                pCur.close();
+                cur.close();
+
+                if(number.contains("+91"))
+                {
+                    number=number.substring(1);
+                }
+                numberID=number;
+                createBotMsg("opening whatsapp");
+                speak("opening whatsapp");
+                final Handler handler = new Handler();
+                handler.postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        Uri mUri = Uri.parse("smsto:"+numberID);
+                        Intent mIntent = new Intent(Intent.ACTION_SENDTO,mUri);
+                        mIntent.setPackage("com.whatsapp");
+                        //mIntent.setType("text/plain");
+                      //  mIntent.putExtra(Intent.EXTRA_TEXT, "The text goes here");
+                       // mIntent.putExtra("chat",true);
+                        startActivity(mIntent);
+
+                    }
+                }, 600);
+
+
+
+
+
+            }
+            else{
+                createBotMsg("No Contact found by that name.");
+                speak("No Contact found by that name.");
+            }
+        }
+        if(text.contains("send message by whatsapp")){
+
+                createBotMsg("what is the message?");
+                speak("what is the message?");
+                final Handler handler = new Handler();
+                handler.postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+
+                        listen3();
+                    }
+                }, 1000);
+
+
+
+
+
+
+        }
     }
     private void createBotMsg(String text){
         chat_Message msg = new chat_Message();
@@ -518,11 +699,14 @@ public class MainActivity extends AppCompatActivity {
                 // for ActivityCompat#requestPermissions for more details.
                 return;
             }
-
+            createBotMsg("Calling "+pName);
+            speak("Calling "+pName);
             startActivity(callIntent);
         }
         else{
-            Toast.makeText(getApplicationContext(),"NO CONTACTS",Toast.LENGTH_LONG).show();
+            createBotMsg("No Contact found by that name.");
+            speak("No Contact found by that name.");
+            //Toast.makeText(getApplicationContext(),"NO CONTACTS",Toast.LENGTH_LONG).show();
         }
 
 
@@ -563,12 +747,14 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void funcCalls(JSONObject ans) throws JSONException {
-        String command=ans.getString("command");
+
+        String command=ans.getString("command").toLowerCase();
+        //Toast.makeText(getApplicationContext(),command,Toast.LENGTH_LONG).show();
         if(command.contains("call")){
             String param=ans.getString("param1");
-            createBotMsg("Calling "+param);
-            Toast.makeText(getApplicationContext(),param,Toast.LENGTH_LONG).show();
-            // find(param);
+
+           // Toast.makeText(getApplicationContext(),param,Toast.LENGTH_LONG).show();
+            find(param);
         }
         else if(command.contains("not found")){
             String param=ans.getString("param1");
@@ -592,7 +778,9 @@ public class MainActivity extends AppCompatActivity {
                 try {
                     JSONObject j=new JSONObject(response);
                         ans=j;
+
                     funcCalls(ans);
+                   // Toast.makeText(getApplicationContext(),"after  funccalls",Toast.LENGTH_LONG).show();
                     //return j;
                 } catch (JSONException e) {
                     e.printStackTrace();
@@ -621,6 +809,24 @@ public class MainActivity extends AppCompatActivity {
         queue.add(req);
         Toast.makeText(getApplicationContext(),"send",Toast.LENGTH_LONG).show();
         return true;
+    }
+    private void smsMEssage(String number,String message){
+        Uri uri = Uri.parse("smsto:" + number);
+        Intent sendIntent = new Intent(Intent.ACTION_SENDTO, uri);
+
+
+
+        sendIntent.putExtra("sms_body", message);
+
+        startActivity(sendIntent);
+    }
+    private void whatsappMessage(String message){
+        Intent ntent = new Intent(Intent.ACTION_SEND);
+        ntent.setPackage("com.whatsapp");
+        ntent.setType("text/plain");
+        ntent.putExtra(Intent.EXTRA_TEXT, message);
+        ntent.putExtra("chat",true);
+        startActivity(ntent);
     }
 }
 
