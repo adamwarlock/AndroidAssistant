@@ -8,6 +8,8 @@ import android.content.SharedPreferences;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.net.Uri;
 import android.os.Build;
 import android.provider.AlarmClock;
@@ -29,8 +31,10 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 import android.text.TextUtils;
 import android.util.Log;
@@ -43,6 +47,17 @@ import android.widget.ListView;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import com.android.volley.AuthFailureError;
+import com.android.volley.Request;
+import com.android.volley.RequestQueue;
+import com.android.volley.Response;
+import com.android.volley.VolleyError;
+import com.android.volley.toolbox.StringRequest;
+import com.android.volley.toolbox.Volley;
+
+import org.json.JSONException;
+import org.json.JSONObject;
 
 public class MainActivity extends AppCompatActivity {
     //CHAT VARIABLES
@@ -63,7 +78,7 @@ public class MainActivity extends AppCompatActivity {
     private static final String NAME = "name";
     private static final String AGE = "age";
     private static final String AS_NAME = "as_name";
-
+    JSONObject ans;
     //socket variables
     String serverAdd ="13.126.0.170";
     int port = 1234;
@@ -154,7 +169,12 @@ public class MainActivity extends AppCompatActivity {
             if (resultCode == RESULT_OK && null != data) {
                 ArrayList<String> res = data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS);
                 String inSpeech = res.get(0);
-                recognition(inSpeech,true);
+              //  recognition(inSpeech);
+                try {
+                    initlizer(inSpeech);
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
             }
         }
     }
@@ -204,8 +224,13 @@ public class MainActivity extends AppCompatActivity {
 
                 messageET.setText("");
 
-                displayMessage(chatMessage);
-                recognition(messageText,false);
+               // displayMessage(chatMessage);
+              //  recognition(messageText);
+                try {
+                    initlizer(messageText);
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
             }
         });
 
@@ -259,9 +284,9 @@ public class MainActivity extends AppCompatActivity {
         //speak(s);
 
     }
-    private void recognition(String text,boolean print){
+    private void recognition(String text){
         text=text.toLowerCase();
-        if(print == true)
+       // if(print == true)
               createUserMsg(text);
 
         Log.e("Speech",""+text);
@@ -516,6 +541,86 @@ public class MainActivity extends AppCompatActivity {
             context.startActivity(intent);
         }
     }
+    private boolean isNetworkAvailable() {
+        ConnectivityManager connectivityManager
+                = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+        NetworkInfo activeNetworkInfo = connectivityManager.getActiveNetworkInfo();
+        return activeNetworkInfo != null && activeNetworkInfo.isConnected();
+    }
 
+    private void initlizer(String text) throws JSONException {
+        if(isNetworkAvailable()){
+            //volley
+         //   Toast.makeText(getApplicationContext(),text,Toast.LENGTH_LONG).show();
+            func(text);
+            createUserMsg(text);
+            //Toast.makeText(getApplicationContext(),ans.getString("command"),Toast.LENGTH_LONG).show();}
+            //funcCalls(ans);
+        }
+        else{
+            recognition(text);
+        }
+    }
+
+    private void funcCalls(JSONObject ans) throws JSONException {
+        String command=ans.getString("command");
+        if(command.contains("call")){
+            String param=ans.getString("param1");
+            createBotMsg("Calling "+param);
+            Toast.makeText(getApplicationContext(),param,Toast.LENGTH_LONG).show();
+            // find(param);
+        }
+        else if(command.contains("not found")){
+            String param=ans.getString("param1");
+            recognition(param);
+        }
+
+
+    }
+
+
+
+    public boolean func(final String text){
+
+        RequestQueue queue = Volley.newRequestQueue(this);
+        String url ="http://13.126.31.42:80/data";
+
+        StringRequest req=new StringRequest(Request.Method.POST, url, new Response.Listener<String>() {
+            @Override
+            public void onResponse(String response) {
+
+                try {
+                    JSONObject j=new JSONObject(response);
+                        ans=j;
+                    funcCalls(ans);
+                    //return j;
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+            }
+        }, new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error) {
+
+            }
+        }){
+            @Override
+            public String getBodyContentType() {
+                return "application/x-www-form-urlencoded; charset=UTF-8";
+            }
+
+            @Override
+            protected Map<String, String> getParams() throws AuthFailureError {
+                Map<String, String> params = new HashMap<String, String>();
+                final String s=text;
+                params.put("key", s);
+
+                return params;
+            }
+        };
+        queue.add(req);
+        Toast.makeText(getApplicationContext(),"send",Toast.LENGTH_LONG).show();
+        return true;
+    }
 }
 
